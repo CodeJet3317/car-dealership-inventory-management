@@ -1,12 +1,41 @@
+"""Focus: It verifies that the core features work correctly—such as ensuring a vehicle is saved with the correct price and model, 
+that listing inventory returns an array, 
+and that updates and deletions actually modify the database records properly."""
+
+import uuid
 import pytest
 from fastapi.testclient import TestClient
 from app.main import app
+from app.database import get_db_connection
+from passlib.context import CryptContext
 
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 client = TestClient(app)
 
-def test_add_vehicle():
+@pytest.fixture
+def admin_headers():
+    """Fixture to generate an admin user and return authorization headers."""
+    admin_email = f"admin_veh_{uuid.uuid4().hex[:6]}@example.com"
+    admin_id = str(uuid.uuid4())
+    hashed_password = pwd_context.hash("adminpassword123")
+    
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            sql = "INSERT INTO users (id, email, password, role) VALUES (%s, %s, %s, 'ADMIN')"
+            cursor.execute(sql, (admin_id, admin_email, hashed_password))
+            connection.commit()
+    finally:
+        connection.close()
+
+    login_res = client.post("/api/auth/login", json={"email": admin_email, "password": "adminpassword123"})
+    token = login_res.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
+
+def test_add_vehicle(admin_headers):
     response = client.post(
         "/api/vehicles",
+        headers=admin_headers,
         json={
             "make": "Toyota",
             "model": "Camry",
@@ -15,7 +44,6 @@ def test_add_vehicle():
             "quantity": 5
         }
     )
-    # Expected to fail (Red) because the endpoint doesn't exist yet
     assert response.status_code == 201
     data = response.json()
     assert "id" in data
@@ -23,16 +51,16 @@ def test_add_vehicle():
     assert data["model"] == "Camry"
 
 def test_get_vehicles():
+    # GET endpoint is public/unprotected, so no headers required
     response = client.get("/api/vehicles")
-    # Expected to fail (Red) until implemented
     assert response.status_code == 200
     data = response.json()
     assert isinstance(data, list)
 
-def test_update_vehicle():
-    # First, create a vehicle to update
+def test_update_vehicle(admin_headers):
     create_res = client.post(
         "/api/vehicles",
+        headers=admin_headers,
         json={
             "make": "Honda",
             "model": "Civic",
@@ -43,9 +71,9 @@ def test_update_vehicle():
     )
     vehicle_id = create_res.json()["id"]
 
-    # Test the update endpoint (Expected to fail/404 right now)
     response = client.put(
         f"/api/vehicles/{vehicle_id}",
+        headers=admin_headers,
         json={
             "make": "Honda",
             "model": "Civic Updated",
@@ -59,10 +87,10 @@ def test_update_vehicle():
     assert data["model"] == "Civic Updated"
     assert data["price"] == 23000.00
 
-def test_delete_vehicle():
-    # First, create a vehicle to delete
+def test_delete_vehicle(admin_headers):
     create_res = client.post(
         "/api/vehicles",
+        headers=admin_headers,
         json={
             "make": "Ford",
             "model": "Mustang",
@@ -73,6 +101,8 @@ def test_delete_vehicle():
     )
     vehicle_id = create_res.json()["id"]
 
-    # Test the delete endpoint (Expected to fail/404 right now)
-    response = client.delete(f"/api/vehicles/{vehicle_id}")
+    response = client.delete(
+        f"/api/vehicles/{vehicle_id}",
+        headers=admin_headers
+    )
     assert response.status_code == 200
