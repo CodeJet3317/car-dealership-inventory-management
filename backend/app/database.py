@@ -27,4 +27,4 @@ def get_db_connection():
         database=os.getenv("DB_NAME", "car_dealership_db"),
         port=int(os.getenv("DB_PORT", 3306)),
         cursorclass=pymysql.cursors.DictCursor  # Format query results as Python dicts
-    )
+    )

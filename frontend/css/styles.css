@@ -1,0 +1,4 @@
+/* Custom styles or component overrides if needed beyond Tailwind */
+body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}

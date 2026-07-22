@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Car Dealership Inventory</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="./css/styles.css">
+</head>
+
+<body class="bg-gray-100 min-h-screen">
+
+    <nav class="bg-blue-600 text-white p-4 shadow-md flex justify-between items-center">
+        <h1 class="text-xl font-bold">🚗 Car Dealership Portal</h1>
+        <div id="nav-auth" class="space-x-4">
+            <span id="user-info" class="hidden font-medium"></span>
+            <button id="logout-btn" class="hidden bg-red-500 px-3 py-1 rounded hover:bg-red-600 text-sm">Logout</button>
+        </div>
+    </nav>
+
+    <div class="container mx-auto p-6 max-w-5xl">
+
+        <div id="auth-section" class="grid md:grid-cols-2 gap-6 bg-white p-6 rounded-lg shadow-md mb-8">
+            <div>
+                <h2 class="text-lg font-bold mb-4 text-gray-700">Login</h2>
+                <form id="login-form" class="space-y-3">
+                    <input type="email" id="login-email" placeholder="Email" required class="w-full p-2 border rounded">
+                    <input type="password" id="login-password" placeholder="Password" required
+                        class="w-full p-2 border rounded">
+                    <button type="submit"
+                        class="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700">Login</button>
+                </form>
+            </div>
+            <div>
+                <h2 class="text-lg font-bold mb-4 text-gray-700">Register</h2>
+                <form id="register-form" class="space-y-3">
+                    <input type="email" id="reg-email" placeholder="Email" required class="w-full p-2 border rounded">
+                    <input type="password" id="reg-password" placeholder="Password" required
+                        class="w-full p-2 border rounded">
+                    <button type="submit"
+                        class="w-full bg-green-600 text-white p-2 rounded hover:bg-green-700">Register</button>
+                </form>
+            </div>
+        </div>
+
+        <div id="dashboard-section" class="hidden space-y-8">
+
+            <div class="bg-white p-4 rounded-lg shadow-md">
+                <h3 class="font-bold text-gray-700 mb-3">🔍 Search Inventory</h3>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                    <input type="text" id="search-make" placeholder="Make (e.g. Toyota)"
+                        class="p-2 border rounded text-sm">
+                    <input type="text" id="search-category" placeholder="Category (e.g. Sedan)"
+                        class="p-2 border rounded text-sm">
+                    <input type="number" id="search-max-price" placeholder="Max Price ($)"
+                        class="p-2 border rounded text-sm">
+                    <button id="search-btn"
+                        class="bg-gray-800 text-white p-2 rounded hover:bg-gray-900 text-sm font-medium">Search</button>
+                </div>
+            </div>
+
+            <div id="admin-panel" class="hidden bg-yellow-50 border border-yellow-200 p-4 rounded-lg shadow-md">
+                <h3 class="font-bold text-yellow-800 mb-3">🛠️ Admin: Add New Vehicle</h3>
+                <form id="add-vehicle-form" class="grid grid-cols-2 md:grid-cols-6 gap-2">
+                    <input type="text" id="add-make" placeholder="Make" required class="p-2 border rounded text-sm">
+                    <input type="text" id="add-model" placeholder="Model" required class="p-2 border rounded text-sm">
+                    <input type="text" id="add-category" placeholder="Category" required
+                        class="p-2 border rounded text-sm">
+                    <input type="number" step="0.01" id="add-price" placeholder="Price" required
+                        class="p-2 border rounded text-sm">
+                    <input type="number" id="add-quantity" placeholder="Qty" required
+                        class="p-2 border rounded text-sm">
+                    <button type="submit"
+                        class="bg-yellow-600 text-white p-2 rounded hover:bg-yellow-700 text-sm font-bold col-span-2 md:col-span-1">Add
+                        Car</button>
+                </form>
+            </div>
+
+            <div>
+                <h3 class="text-xl font-bold text-gray-800 mb-4">Available Vehicles</h3>
+                <div id="vehicle-grid" class="grid md:grid-cols-3 gap-4"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <script type="module" src="./js/main.js"></script>
+</body>
+
+</html>
