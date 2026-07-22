@@ -106,3 +106,51 @@ def test_delete_vehicle(admin_headers):
         headers=admin_headers
     )
     assert response.status_code == 200
+
+def test_search_vehicles(admin_headers):
+    # 1. Add a unique vehicle for search testing
+    client.post(
+        "/api/vehicles",
+        headers=admin_headers,
+        json={
+            "make": "Subaru",
+            "model": "Outback",
+            "category": "SUV",
+            "price": 30000.00,
+            "quantity": 4
+        }
+    )
+
+    # 2. Test search endpoint by make and min_price
+    response = client.get("/api/vehicles/search?make=Subaru&min_price=25000")
+    assert response.status_code == 200
+    data = response.json()
+    assert isinstance(data, list)
+    assert len(data) >= 1
+    assert data[0]["make"] == "Subaru"
+    assert data[0]["model"] == "Outback"
+
+def test_restock_vehicle(admin_headers):
+    # 1. Create a vehicle to restock
+    vehicle_res = client.post(
+        "/api/vehicles",
+        headers=admin_headers,
+        json={
+            "make": "Mazda",
+            "model": "CX-5",
+            "category": "SUV",
+            "price": 28000.00,
+            "quantity": 2
+        }
+    )
+    vehicle_id = vehicle_res.json()["id"]
+
+    # 2. Restock the vehicle (adding 5 more units, total should become 7)
+    response = client.post(
+        f"/api/vehicles/{vehicle_id}/restock",
+        headers=admin_headers,
+        json={"quantity": 5}
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["new_quantity"] == 7
