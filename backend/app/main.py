@@ -1,10 +1,11 @@
 from fastapi import FastAPI
-from app.routers import auth
+from app.routers import auth, vehicles
 
 app = FastAPI(title="Car Dealership Inventory System")
 
-# Include the modular routers
+# Include modular routers
 app.include_router(auth.router)
+app.include_router(vehicles.router)
 
 @app.get("/")
 def root():
