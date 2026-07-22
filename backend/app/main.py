@@ -1,138 +1,70 @@
-"""
-Car Dealership Inventory Management System - FastAPI REST API
---------------------------------------------------------------
-Implements REST API endpoints for vehicle management using Raw SQL queries:
-- POST /api/vehicles: Register a new vehicle to inventory
-- GET  /api/vehicles: Retrieve all vehicles in inventory
-- POST /api/vehicles/{vehicle_id}/purchase: Process a vehicle purchase transaction
-"""
-
+import os
+import uuid
+import jwt
 from fastapi import FastAPI, HTTPException, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, EmailStr
+from passlib.context import CryptContext
 from .database import get_db_connection
 
-# Initialize FastAPI application instance
-app = FastAPI(
-    title="Car Dealership Inventory System (Raw SQL)",
-    description="API for managing vehicle inventory using parameterized Raw SQL queries",
-    version="1.0.0"
-)
+app = FastAPI(title="Car Dealership Inventory System")
 
+# Password hashing setup
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# Pydantic schema model for vehicle creation payload validation
-class VehicleCreate(BaseModel):
-    make: str = Field(..., example="Toyota", description="Manufacturer / Brand of the vehicle")
-    model: str = Field(..., example="Camry", description="Model name of the vehicle")
-    category: str = Field(..., example="Sedan", description="Vehicle classification category")
-    price: float = Field(..., gt=0, example=25000.0, description="Retail price (must be greater than 0)")
-    quantity: int = Field(..., ge=0, example=10, description="Stock quantity (must be non-negative)")
+# JWT Configuration
+JWT_SECRET = os.getenv("JWT_SECRET", "super_secret_jwt_key")
+ALGORITHM = "HS256"
 
+# Pydantic Schemas for Request Validation
+class UserCreate(BaseModel):
+    email: EmailStr
+    password: str
 
-@app.post("/api/vehicles", status_code=status.HTTP_201_CREATED)
-def add_vehicle(vehicle: VehicleCreate):
-    """
-    Creates a new vehicle entry in the inventory database.
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
 
-    - Uses parameterized SQL query (%s placeholders) to prevent SQL Injection.
-    - Generates a unique UUID() for the vehicle primary key.
-    - Commits transaction on success, rollbacks on error.
-    """
+@app.post("/api/auth/register", status_code=status.HTTP_201_CREATED)
+def register_user(user: UserCreate):
     connection = get_db_connection()
     try:
         with connection.cursor() as cursor:
-            # Raw SQL INSERT query using parameterized values for security
-            sql = """
-                INSERT INTO vehicles (id, make, model, category, price, quantity) 
-                VALUES (UUID(), %s, %s, %s, %s, %s)
-            """
-            cursor.execute(sql, (
-                vehicle.make, 
-                vehicle.model, 
-                vehicle.category, 
-                vehicle.price, 
-                vehicle.quantity
-            ))
-            # Commit the transaction to store the new vehicle record
+            # Check if user already exists
+            cursor.execute("SELECT id FROM users WHERE email = %s", (user.email,))
+            if cursor.fetchone():
+                raise HTTPException(status_code=400, detail="Email already registered")
+            
+            # Hash password and generate UUID
+            user_id = str(uuid.uuid4())
+            hashed_password = pwd_context.hash(user.password)
+            
+            # Insert new user with raw SQL
+            sql = "INSERT INTO users (id, email, password, role) VALUES (%s, %s, %s, 'USER')"
+            cursor.execute(sql, (user_id, user.email, hashed_password))
             connection.commit()
             
-        return {"message": "Vehicle added successfully"}
-    
-    except Exception as e:
-        # Rollback transaction in case of database errors
-        connection.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
-            detail=f"Failed to insert vehicle: {str(e)}"
-        )
+        return {"id": user_id, "email": user.email, "role": "USER"}
     
     finally:
-        # Guarantee connection resource cleanup
         connection.close()
 
-
-@app.get("/api/vehicles")
-def get_all_vehicles():
-    """
-    Retrieves all vehicle entries currently stored in the inventory.
-
-    Returns:
-        List of dictionaries containing vehicle record details.
-    """
+@app.post("/api/auth/login")
+def login_user(user: UserLogin):
     connection = get_db_connection()
     try:
         with connection.cursor() as cursor:
-            # Direct raw SQL SELECT query to retrieve all inventory rows
-            cursor.execute("SELECT id, make, model, category, price, quantity FROM vehicles")
-            vehicles = cursor.fetchall()
+            # Fetch user by email
+            cursor.execute("SELECT * FROM users WHERE email = %s", (user.email,))
+            db_user = cursor.fetchone()
             
-        return vehicles
-    
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch inventory: {str(e)}"
-        )
+            if not db_user or not pwd_context.verify(user.password, db_user["password"]):
+                raise HTTPException(status_code=401, detail="Invalid credentials")
+            
+            # Generate JWT Token
+            token_payload = {"sub": db_user["email"], "role": db_user["role"]}
+            access_token = jwt.encode(token_payload, JWT_SECRET, algorithm=ALGORITHM)
+            
+        return {"access_token": access_token, "token_type": "bearer"}
     
     finally:
-        # Guarantee connection resource cleanup
         connection.close()
-
-
-@app.post("/api/vehicles/{vehicle_id}/purchase")
-def purchase_vehicle(vehicle_id: str):
-    """
-    Executes a purchase transaction for a specified vehicle by ID.
-
-    - Decrements stock quantity by 1 if quantity > 0.
-    - Raises HTTP 400 Bad Request if vehicle doesn't exist or is out of stock.
-    """
-    connection = get_db_connection()
-    try:
-        with connection.cursor() as cursor:
-            # Raw SQL UPDATE query with concurrency guard clause (quantity > 0)
-            sql = "UPDATE vehicles SET quantity = quantity - 1 WHERE id = %s AND quantity > 0"
-            rows_affected = cursor.execute(sql, (vehicle_id,))
-            connection.commit()
-            
-            # If no rows were updated, vehicle is either missing or out of stock
-            if rows_affected == 0:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST, 
-                    detail="Vehicle not found or out of stock"
-                )
-                
-        return {"message": "Vehicle purchased successfully"}
-    
-    except HTTPException:
-        # Re-raise explicit HTTP exceptions (e.g. 400 Out of Stock)
-        raise
-    except Exception as e:
-        connection.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Purchase transaction failed: {str(e)}"
-        )
-    
-    finally:
-        # Guarantee connection resource cleanup
-        connection.close()
