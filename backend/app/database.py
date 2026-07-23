@@ -11,17 +11,16 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 def get_db_connection():
     """
     Establishes and returns a direct raw SQL MySQL connection using PyMySQL.
-    Prioritizes Railway's native MYSQLHOST variables to prevent misconfiguration.
+    Strictly prioritizes Railway's native MySQL environment variables.
     """
     return pymysql.connect(
-        host=os.getenv("MYSQLHOST") or os.getenv("DB_HOST", "localhost"),
-        user=os.getenv("MYSQLUSER") or os.getenv("DB_USER", "root"),
-        password=os.getenv("MYSQLPASSWORD") or os.getenv("DB_PASSWORD", "root"),
-        database=os.getenv("MYSQLDATABASE") or os.getenv("DB_NAME", "car_dealership_db"),
-        port=int(os.getenv("MYSQLPORT") or os.getenv("DB_PORT", 3306)),
+        host=os.getenv("MYSQLHOST"),
+        user=os.getenv("MYSQLUSER"),
+        password=os.getenv("MYSQLPASSWORD"),
+        database=os.getenv("MYSQLDATABASE"),
+        port=int(os.getenv("MYSQLPORT", 3306)),
         cursorclass=pymysql.cursors.DictCursor
     )
-
 def init_db():
     """
     Automatically creates required MySQL tables on startup if they do not exist.
