@@ -40,15 +40,15 @@ A modern, full-stack web application designed for car dealerships to manage vehi
 
 ### 1. Login & Registration Portal
 <!-- Replace 'path/to/login_register_screenshot.png' with your screenshot file path -->
-![Login & Registration Portal](p"C:\Users\acer\OneDrive\Pictures\Screenshots 1\Screenshot 2026-07-23 133122.png")
+![Login & Registration Portal](images/Screenshot 2026-07-23 133122.png)
 
 ### 2. User Portal & Vehicle Inventory Dashboard
 <!-- Replace 'path/to/user_portal_screenshot.png' with your screenshot file path -->
-![User Portal Dashboard]("C:\Users\acer\OneDrive\Pictures\Screenshots 1\Screenshot 2026-07-23 133038.png")
+![User Portal Dashboard](images/Screenshot 2026-07-23 133038.png)
 
 ### 3. Admin Portal & Inventory Management Controls
 <!-- Replace 'path/to/admin_portal_screenshot.png' with your screenshot file path -->
-![Admin Portal Controls]("C:\Users\acer\OneDrive\Pictures\Screenshots 1\Screenshot 2026-07-23 133111.png")
+![Admin Portal Controls](images/Screenshot 2026-07-23 133111.png)
 
 ---
 
