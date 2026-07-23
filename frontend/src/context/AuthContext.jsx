@@ -69,7 +69,11 @@ export const AuthProvider = ({ children }) => {
     setRole(null);
     setEmail(null);
     setMustReset(false);
-    localStorage.clear();
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    localStorage.removeItem("email");
+    localStorage.removeItem("must_reset");
+    localStorage.removeItem("theme");
   };
 
   const updateCredentials = async (newEmail, newPassword) => {

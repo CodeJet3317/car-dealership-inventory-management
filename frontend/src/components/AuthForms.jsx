@@ -4,148 +4,95 @@ import { LogIn, UserPlus, Mail, Lock, ShieldCheck } from "lucide-react";
 
 export const AuthForms = ({ onLoginComplete }) => {
   const { login, register } = useAuth();
+  const [isRegisterMode, setIsRegisterMode] = useState(true);
 
-  const [loginEmail, setLoginEmail] = useState("");
-  const [loginPassword, setLoginPassword] = useState("");
-  const [loginError, setLoginError] = useState("");
-  const [loginLoading, setLoginLoading] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const [regEmail, setRegEmail] = useState("");
-  const [regPassword, setRegPassword] = useState("");
-  const [regMessage, setRegMessage] = useState("");
-  const [regError, setRegError] = useState("");
-  const [regLoading, setRegLoading] = useState(false);
-
-  const handleLoginSubmit = async (e) => {
-    e.preventDefault();
-    setLoginError("");
-    setLoginLoading(true);
-
-    try {
-      const res = await login(loginEmail, loginPassword);
-      if (onLoginComplete) {
-        onLoginComplete(res.mustReset);
-      }
-    } catch (err) {
-      setLoginError(err.message || "Failed to login");
-    } finally {
-      setLoginLoading(false);
-    }
+  const switchMode = (toRegister) => {
+    setIsRegisterMode(toRegister);
+    setError("");
+    setMessage("");
+    setEmail("");
+    setPassword("");
   };
 
-  const handleRegisterSubmit = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setRegError("");
-    setRegMessage("");
-    setRegLoading(true);
+    setError("");
+    setMessage("");
+    setLoading(true);
 
     try {
-      await register(regEmail, regPassword);
-      setRegMessage("Registration successful! Please log in above.");
-      setRegEmail("");
-      setRegPassword("");
+      if (isRegisterMode) {
+        await register(email, password);
+        setMessage("Registration successful! You can now log in below.");
+        setIsRegisterMode(false);
+        setPassword("");
+      } else {
+        const res = await login(email, password);
+        if (onLoginComplete) {
+          onLoginComplete(res.mustReset);
+        }
+      }
     } catch (err) {
-      setRegError(err.message || "Failed to register");
+      setError(err.message || (isRegisterMode ? "Failed to register" : "Failed to login"));
     } finally {
-      setRegLoading(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto mb-12">
-      {/* Login Card */}
-      <div className="glass-panel p-8 rounded-2xl shadow-2xl relative overflow-hidden group">
-        <div className="absolute -right-10 -top-10 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl group-hover:bg-blue-500/20 transition-all duration-300"></div>
+    <div className="max-w-md mx-auto my-8">
+      <div className="glass-panel p-8 rounded-2xl shadow-2xl relative overflow-hidden group border border-slate-700/60">
+        <div
+          className={`absolute -right-10 -top-10 w-36 h-36 rounded-full blur-2xl transition-all duration-500 ${
+            isRegisterMode
+              ? "bg-emerald-500/10 group-hover:bg-emerald-500/20"
+              : "bg-indigo-500/10 group-hover:bg-indigo-500/20"
+          }`}
+        ></div>
 
-        <div className="flex items-center space-x-3 mb-6">
-          <div className="p-3 bg-blue-500/20 text-blue-400 rounded-xl border border-blue-500/30">
-            <LogIn className="w-6 h-6" />
-          </div>
-          <div>
-            <h2 className="text-xl font-bold text-white">Member Login</h2>
-            <p className="text-xs text-slate-400">Access dealership management features</p>
-          </div>
-        </div>
-
-        {loginError && (
-          <div className="mb-4 p-3 bg-rose-500/10 border border-rose-500/30 text-rose-300 rounded-xl text-sm font-medium">
-            {loginError}
-          </div>
-        )}
-
-        <form onSubmit={handleLoginSubmit} className="space-y-4">
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
-              Email Address
-            </label>
-            <div className="relative">
-              <Mail className="w-5 h-5 absolute left-3.5 top-3 text-slate-500" />
-              <input
-                type="email"
-                value={loginEmail}
-                onChange={(e) => setLoginEmail(e.target.value)}
-                placeholder="admin@gmail.com"
-                required
-                className="w-full pl-11 pr-4 py-2.5 bg-slate-900/60 border border-slate-700/80 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
-              Password
-            </label>
-            <div className="relative">
-              <Lock className="w-5 h-5 absolute left-3.5 top-3 text-slate-500" />
-              <input
-                type="password"
-                value={loginPassword}
-                onChange={(e) => setLoginPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                className="w-full pl-11 pr-4 py-2.5 bg-slate-900/60 border border-slate-700/80 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
-              />
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={loginLoading}
-            className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl shadow-lg shadow-blue-900/30 transition-all duration-200 disabled:opacity-50 mt-2"
+        {/* Header */}
+        <div className="flex items-center space-x-3.5 mb-6">
+          <div
+            className={`p-3 rounded-xl border transition-all duration-300 ${
+              isRegisterMode
+                ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
+                : "bg-indigo-500/20 text-indigo-400 border-indigo-500/30"
+            }`}
           >
-            {loginLoading ? "Authenticating..." : "Sign In to Portal"}
-          </button>
-        </form>
-      </div>
-
-      {/* Register Card */}
-      <div className="glass-panel p-8 rounded-2xl shadow-2xl relative overflow-hidden group">
-        <div className="absolute -right-10 -top-10 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl group-hover:bg-emerald-500/20 transition-all duration-300"></div>
-
-        <div className="flex items-center space-x-3 mb-6">
-          <div className="p-3 bg-emerald-500/20 text-emerald-400 rounded-xl border border-emerald-500/30">
-            <UserPlus className="w-6 h-6" />
+            {isRegisterMode ? <UserPlus className="w-6 h-6" /> : <LogIn className="w-6 h-6" />}
           </div>
           <div>
-            <h2 className="text-xl font-bold text-white">Create Account</h2>
-            <p className="text-xs text-slate-400">Register as a standard customer user</p>
+            <h2 className="text-2xl font-extrabold text-white">
+              {isRegisterMode ? "Create Account" : "Login"}
+            </h2>
+            <p className="text-xs text-slate-400">
+              {isRegisterMode
+                ? "Register for standard access to the dealership portal"
+                : "Sign in to access your portal account"}
+            </p>
           </div>
         </div>
 
-        {regError && (
-          <div className="mb-4 p-3 bg-rose-500/10 border border-rose-500/30 text-rose-300 rounded-xl text-sm font-medium">
-            {regError}
+        {error && (
+          <div className="mb-5 p-3.5 bg-rose-500/10 border border-rose-500/30 text-rose-300 rounded-xl text-xs font-medium leading-relaxed">
+            {error}
           </div>
         )}
 
-        {regMessage && (
-          <div className="mb-4 p-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 rounded-xl text-sm font-medium flex items-center space-x-2">
-            <ShieldCheck className="w-4 h-4 text-emerald-400" />
-            <span>{regMessage}</span>
+        {message && (
+          <div className="mb-5 p-3.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 rounded-xl text-xs font-medium flex items-center space-x-2">
+            <ShieldCheck className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+            <span>{message}</span>
           </div>
         )}
 
-        <form onSubmit={handleRegisterSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
               Email Address
@@ -154,11 +101,11 @@ export const AuthForms = ({ onLoginComplete }) => {
               <Mail className="w-5 h-5 absolute left-3.5 top-3 text-slate-500" />
               <input
                 type="email"
-                value={regEmail}
-                onChange={(e) => setRegEmail(e.target.value)}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder="user@example.com"
                 required
-                className="w-full pl-11 pr-4 py-2.5 bg-slate-900/60 border border-slate-700/80 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+                className="w-full pl-11 pr-4 py-2.5 bg-slate-900/60 border border-slate-700/80 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
               />
             </div>
           </div>
@@ -171,23 +118,60 @@ export const AuthForms = ({ onLoginComplete }) => {
               <Lock className="w-5 h-5 absolute left-3.5 top-3 text-slate-500" />
               <input
                 type="password"
-                value={regPassword}
-                onChange={(e) => setRegPassword(e.target.value)}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 required
-                className="w-full pl-11 pr-4 py-2.5 bg-slate-900/60 border border-slate-700/80 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+                className="w-full pl-11 pr-4 py-2.5 bg-slate-900/60 border border-slate-700/80 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
               />
             </div>
           </div>
 
           <button
             type="submit"
-            disabled={regLoading}
-            className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-900/30 transition-all duration-200 disabled:opacity-50 mt-2"
+            disabled={loading}
+            className={`w-full py-3 text-white font-bold rounded-xl shadow-lg transition-all duration-200 disabled:opacity-50 mt-2 ${
+              isRegisterMode
+                ? "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-emerald-950/40"
+                : "bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 shadow-blue-950/40"
+            }`}
           >
-            {regLoading ? "Registering..." : "Create New Account"}
+            {loading
+              ? isRegisterMode
+                ? "Registering..."
+                : "Authenticating..."
+              : isRegisterMode
+              ? "Create Account"
+              : "Login"}
           </button>
         </form>
+
+        {/* Toggle Link at Bottom */}
+        <div className="mt-6 pt-5 border-t border-slate-700/60 text-center">
+          {isRegisterMode ? (
+            <p className="text-xs text-slate-400">
+              Already a user?{" "}
+              <button
+                type="button"
+                onClick={() => switchMode(false)}
+                className="font-bold text-blue-400 hover:text-blue-300 underline underline-offset-4 transition-colors"
+              >
+                Log in here
+              </button>
+            </p>
+          ) : (
+            <p className="text-xs text-slate-400">
+              Don't have an account?{" "}
+              <button
+                type="button"
+                onClick={() => switchMode(true)}
+                className="font-bold text-emerald-400 hover:text-emerald-300 underline underline-offset-4 transition-colors"
+              >
+                Register here
+              </button>
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );

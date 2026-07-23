@@ -2,7 +2,7 @@ import React from "react";
 import { VehicleCard } from "./VehicleCard";
 import { CarFront } from "lucide-react";
 
-export const VehicleGrid = ({ vehicles, onPurchase, onRestock, onDelete }) => {
+export const VehicleGrid = ({ vehicles, viewMode = "grid", onPurchase, onRestock, onDelete }) => {
   if (!vehicles || vehicles.length === 0) {
     return (
       <div className="glass-panel p-12 rounded-2xl text-center border border-slate-700/50">
@@ -14,11 +14,19 @@ export const VehicleGrid = ({ vehicles, onPurchase, onRestock, onDelete }) => {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div
+      id="vehicle-grid"
+      className={
+        viewMode === "list"
+          ? "flex flex-col space-y-3"
+          : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+      }
+    >
       {vehicles.map((v) => (
         <VehicleCard
           key={v.id || v[0]}
           vehicle={v}
+          viewMode={viewMode}
           onPurchase={onPurchase}
           onRestock={onRestock}
           onDelete={onDelete}
