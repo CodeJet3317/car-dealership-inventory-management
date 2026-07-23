@@ -1,9 +1,15 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers import auth, vehicles, orders
+from app.database import init_db
+from app.database import seed_default_admin
 
 app = FastAPI(title="Car Dealership Inventory System")
 
+@app.on_event("startup")
+def startup_event():
+    init_db()
+    seed_default_admin()
 # Enable CORS so the frontend can communicate with the backend
 app.add_middleware(
     CORSMiddleware,

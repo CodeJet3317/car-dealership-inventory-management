@@ -154,3 +154,55 @@ def test_restock_vehicle(admin_headers):
     assert response.status_code == 200
     data = response.json()
     assert data["new_quantity"] == 7
+
+def test_purchase_vehicle_reduces_stock(admin_headers):
+    # 1. Admin creates a vehicle with stock = 5
+    v_res = client.post(
+        "/api/vehicles",
+        headers=admin_headers,
+        json={"make": "Nissan", "model": "Altima", "category": "Sedan", "price": 24000.0, "quantity": 5}
+    )
+    vehicle_id = v_res.json()["id"]
+
+    # 2. Register regular user and purchase 2 units
+    email = f"buyer_{uuid.uuid4().hex[:6]}@example.com"
+    client.post("/api/auth/register", json={"email": email, "password": "password123"})
+    token = client.post("/api/auth/login", json={"email": email, "password": "password123"}).json()["access_token"]
+    user_headers = {"Authorization": f"Bearer {token}"}
+
+    pur_res = client.post(
+        f"/api/vehicles/{vehicle_id}/purchase",
+        headers=user_headers,
+        json={"quantity": 2}
+    )
+    assert pur_res.status_code == 201
+    assert pur_res.json()["quantity"] == 2
+
+    # 3. Verify remaining stock is 3
+    search_res = client.get(f"/api/vehicles/search?model=Altima")
+    matching = [v for v in search_res.json() if v["id"] == vehicle_id]
+    assert len(matching) == 1
+    assert matching[0]["quantity"] == 3
+
+def test_purchase_out_of_stock_blocked(admin_headers):
+    # 1. Admin creates a vehicle with stock = 1
+    v_res = client.post(
+        "/api/vehicles",
+        headers=admin_headers,
+        json={"make": "Lexus", "model": "RX", "category": "SUV", "price": 50000.0, "quantity": 1}
+    )
+    vehicle_id = v_res.json()["id"]
+
+    # 2. Regular user attempts to purchase 2 units (more than available)
+    email = f"buyer_{uuid.uuid4().hex[:6]}@example.com"
+    client.post("/api/auth/register", json={"email": email, "password": "password123"})
+    token = client.post("/api/auth/login", json={"email": email, "password": "password123"}).json()["access_token"]
+    user_headers = {"Authorization": f"Bearer {token}"}
+
+    pur_res = client.post(
+        f"/api/vehicles/{vehicle_id}/purchase",
+        headers=user_headers,
+        json={"quantity": 2}
+    )
+    assert pur_res.status_code == 400
+    assert "stock" in pur_res.json()["detail"].lower()

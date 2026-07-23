@@ -71,3 +71,59 @@ def test_admin_user_can_add_vehicle():
     assert response.status_code == 201
     data = response.json()
     assert data["make"] == "Porsche"
+
+def test_regular_user_cannot_delete_vehicle():
+    # 1. Admin creates a vehicle
+    admin_email = f"admin_{uuid.uuid4().hex[:6]}@example.com"
+    admin_id = str(uuid.uuid4())
+    hashed_password = pwd_context.hash("adminpassword123")
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("INSERT INTO users (id, email, password, role) VALUES (%s, %s, %s, 'ADMIN')", (admin_id, admin_email, hashed_password))
+            connection.commit()
+    finally:
+        connection.close()
+
+    admin_login = client.post("/api/auth/login", json={"email": admin_email, "password": "adminpassword123"})
+    admin_token = admin_login.json()["access_token"]
+    
+    veh_res = client.post("/api/vehicles", headers={"Authorization": f"Bearer {admin_token}"}, json={"make": "Audi", "model": "R8", "category": "Sports", "price": 140000.0, "quantity": 1})
+    vehicle_id = veh_res.json()["id"]
+
+    # 2. Regular user attempts to delete the vehicle
+    user_email = f"user_{uuid.uuid4().hex[:6]}@example.com"
+    client.post("/api/auth/register", json={"email": user_email, "password": "password123"})
+    user_login = client.post("/api/auth/login", json={"email": user_email, "password": "password123"})
+    user_token = user_login.json()["access_token"]
+
+    del_res = client.delete(f"/api/vehicles/{vehicle_id}", headers={"Authorization": f"Bearer {user_token}"})
+    assert del_res.status_code == 403
+
+def test_regular_user_cannot_restock_vehicle():
+    # 1. Admin creates a vehicle
+    admin_email = f"admin_{uuid.uuid4().hex[:6]}@example.com"
+    admin_id = str(uuid.uuid4())
+    hashed_password = pwd_context.hash("adminpassword123")
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("INSERT INTO users (id, email, password, role) VALUES (%s, %s, %s, 'ADMIN')", (admin_id, admin_email, hashed_password))
+            connection.commit()
+    finally:
+        connection.close()
+
+    admin_login = client.post("/api/auth/login", json={"email": admin_email, "password": "adminpassword123"})
+    admin_token = admin_login.json()["access_token"]
+    
+    veh_res = client.post("/api/vehicles", headers={"Authorization": f"Bearer {admin_token}"}, json={"make": "BMW", "model": "M3", "category": "Sedan", "price": 75000.0, "quantity": 2})
+    vehicle_id = veh_res.json()["id"]
+
+    # 2. Regular user attempts to restock
+    user_email = f"user_{uuid.uuid4().hex[:6]}@example.com"
+    client.post("/api/auth/register", json={"email": user_email, "password": "password123"})
+    user_login = client.post("/api/auth/login", json={"email": user_email, "password": "password123"})
+    user_token = user_login.json()["access_token"]
+
+    restock_res = client.post(f"/api/vehicles/{vehicle_id}/restock", headers={"Authorization": f"Bearer {user_token}"}, json={"quantity": 5})
+    assert restock_res.status_code == 403
