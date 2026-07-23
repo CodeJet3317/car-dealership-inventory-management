@@ -11,13 +11,14 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 def get_db_connection():
     """
     Establishes and returns a direct raw SQL MySQL connection using PyMySQL.
+    Supports local .env variables as well as Railway's native MYSQL_ variables.
     """
     return pymysql.connect(
-        host=os.getenv("DB_HOST", "localhost"),
-        user=os.getenv("DB_USER", "root"),
-        password=os.getenv("DB_PASSWORD", "root"),
-        database=os.getenv("DB_NAME", "car_dealership_db"),
-        port=int(os.getenv("DB_PORT", 3306)),
+        host=os.getenv("DB_HOST", os.getenv("MYSQLHOST", "localhost")),
+        user=os.getenv("DB_USER", os.getenv("MYSQLUSER", "root")),
+        password=os.getenv("DB_PASSWORD", os.getenv("MYSQLPASSWORD", "root")),
+        database=os.getenv("DB_NAME", os.getenv("MYSQLDATABASE", "car_dealership_db")),
+        port=int(os.getenv("DB_PORT", os.getenv("MYSQLPORT", 3306))),
         cursorclass=pymysql.cursors.DictCursor
     )
 
